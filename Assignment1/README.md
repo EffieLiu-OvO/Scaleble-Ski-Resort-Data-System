@@ -13,13 +13,16 @@ private static final String SERVER_URL = "http://your-ec2-ip:8080/CS6650-Server/
 
 Main settings can be found in MultithreadedClient.java:
 
-INITIAL_THREAD_COUNT: Initial number of threads (default: 32)
-REQUESTS_PER_THREAD: Requests per thread (default: 1000)
-TOTAL_REQUESTS: Total number of requests to send (default: 200000)
-PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32)
-QUEUE_CAPACITY: Event queue size (default: 10000)
+ ```bash
+INITIAL_THREAD_COUNT: Initial number of threads (default: 32);
+REQUESTS_PER_THREAD: Requests per thread (default: 1000);
+TOTAL_REQUESTS: Total number of requests to send (default: 200000);
+PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32);
+QUEUE_CAPACITY: Event queue size (default: 10000);
+```
 
 ## How to Run
+``` bash
 Ensure correct SERVER_URL in SkiersClient.java
 Run MultithreadedClient.java
 The client will output:
@@ -27,6 +30,7 @@ Client configuration
 Total successful/failed requests
 Total run time
 Throughput (requests/second)
+```
 
 # Client 2 - Enhanced Ski Resort Data Client with Performance Monitoring
 ## Setup and Configuration  
