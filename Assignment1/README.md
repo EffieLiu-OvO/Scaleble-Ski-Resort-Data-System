@@ -22,10 +22,11 @@ QUEUE_CAPACITY: Event queue size (default: 10000);
 ```
 
 ## How to Run
+
+1. Ensure correct SERVER_URL in SkiersClient.java
+2. Run MultithreadedClient.java
+3. The client will output:
 ``` bash
-Ensure correct SERVER_URL in SkiersClient.java
-Run MultithreadedClient.java
-The client will output:
 Client configuration
 Total successful/failed requests
 Total run time
@@ -55,11 +56,11 @@ QUEUE_CAPACITY: Event queue size (default: 10000)
  ```
 
 ## How to Run
- ```bash
-Ensure correct SERVER_URL in SkiersClient.java
-Run MultithreadedClient.java
 
-The client will output:
+1. Ensure correct SERVER_URL in SkiersClient.java
+2. Run MultithreadedClient.java
+3. The client will output:
+ ```bash
 Client configuration
 Total successful/failed requests
 Total run time
