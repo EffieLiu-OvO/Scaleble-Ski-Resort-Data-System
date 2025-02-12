@@ -57,6 +57,7 @@ Client configuration
 Total successful/failed requests
 Total run time
 Throughput (requests/second)
+
 Performance statistics
 Mean response time
 Median response time
