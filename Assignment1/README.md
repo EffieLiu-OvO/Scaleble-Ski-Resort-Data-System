@@ -75,9 +75,9 @@ Min/Max response times
 
 ## Generated Files
 
-request_records.csv: Contains detailed metrics for each request
-throughput_plot.png (please run this): Visual representation of throughput over time 
-remember to change the path to request_records.csv accordingly.
+1. request_records.csv: Contains detailed metrics for each request
+2. throughput_plot.png (please run this): Visual representation of throughput over time 
+ *remember to change the path to request_records.csv accordingly.
 
  ```bash
 public static void main(String[] args) {
