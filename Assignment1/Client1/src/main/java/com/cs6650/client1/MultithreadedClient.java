@@ -11,8 +11,9 @@ public class MultithreadedClient {
     private static final int INITIAL_THREAD_COUNT = 32;
     private static final int REQUESTS_PER_THREAD = 1000;
     private static final int TOTAL_REQUESTS = 200000;
-    private static final int PHASE2_THREAD_COUNT = 32;
+    private static final int PHASE2_THREAD_COUNT = 64; // Increased from 32
     private static final int QUEUE_CAPACITY = 10000;
+    private static final int BATCH_SIZE = 500;
 
     private static final AtomicInteger successfulRequests = new AtomicInteger(0);
     private static final AtomicInteger failedRequests = new AtomicInteger(0);
@@ -52,28 +53,27 @@ public class MultithreadedClient {
         int remainingRequests = TOTAL_REQUESTS - (INITIAL_THREAD_COUNT * REQUESTS_PER_THREAD);
         if (remainingRequests > 0) {
             ExecutorService phase2Executor = Executors.newFixedThreadPool(PHASE2_THREAD_COUNT);
-            int requestsPerThread = remainingRequests / PHASE2_THREAD_COUNT;
-            int extraRequests = remainingRequests % PHASE2_THREAD_COUNT;
+            int numBatches = (int) Math.ceil((double) remainingRequests / BATCH_SIZE);
 
-            for (int i = 0; i < PHASE2_THREAD_COUNT; i++) {
-                final int threadRequests = i == 0 ? requestsPerThread + extraRequests : requestsPerThread;
-                if (threadRequests > 0) {
-                    phase2Executor.submit(() -> {
-                        for (int j = 0; j < threadRequests; j++) {
-                            try {
-                                JsonObject liftRide = eventQueue.take();
-                                if (SkiersClient.sendPostRequest(liftRide)) {
-                                    successfulRequests.incrementAndGet();
-                                } else {
-                                    failedRequests.incrementAndGet();
-                                }
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                break;
+            for (int i = 0; i < numBatches; i++) {
+                int currentBatchSize = (i == numBatches - 1) ?
+                        remainingRequests - (i * BATCH_SIZE) : BATCH_SIZE;
+
+                phase2Executor.submit(() -> {
+                    for (int j = 0; j < currentBatchSize; j++) {
+                        try {
+                            JsonObject liftRide = eventQueue.take();
+                            if (SkiersClient.sendPostRequest(liftRide)) {
+                                successfulRequests.incrementAndGet();
+                            } else {
+                                failedRequests.incrementAndGet();
                             }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
                         }
-                    });
-                }
+                    }
+                });
             }
 
             phase2Executor.shutdown();
@@ -95,8 +95,8 @@ public class MultithreadedClient {
 
         System.out.println("Client Configuration:");
         System.out.println("Initial Thread Count: " + INITIAL_THREAD_COUNT);
-        System.out.println("Requests per Thread: " + REQUESTS_PER_THREAD);
         System.out.println("Phase 2 Thread Count: " + PHASE2_THREAD_COUNT);
+        System.out.println("Batch Size: " + BATCH_SIZE);
         System.out.println("\nResults:");
         System.out.println("Total successful requests: " + successfulRequests.get());
         System.out.println("Total failed requests: " + failedRequests.get());

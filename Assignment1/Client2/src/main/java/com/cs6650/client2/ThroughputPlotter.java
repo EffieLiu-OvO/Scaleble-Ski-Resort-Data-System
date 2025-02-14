@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class ThroughputPlotter {
     public static void main(String[] args) {
-        String csvFile = "C:/Users/liume_lhvc42h/Desktop/CS6650-Assignment1/CS6650-Client2/request_records.csv";
+        String csvFile = "C:/Users/liume_lhvc42h/Desktop/CS6650-Assignments/Assignment1/Client2/request_records.csv";
         String outputFile = "throughput_plot.png";
 
         try {
