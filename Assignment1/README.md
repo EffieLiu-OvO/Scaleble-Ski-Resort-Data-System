@@ -17,8 +17,9 @@ Main settings can be found in MultithreadedClient.java:
 INITIAL_THREAD_COUNT: Initial number of threads (default: 32);
 REQUESTS_PER_THREAD: Requests per thread (default: 1000);
 TOTAL_REQUESTS: Total number of requests to send (default: 200000);
-PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32);
+PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 64);
 QUEUE_CAPACITY: Event queue size (default: 10000);
+BATCH_SIZE = 500;
 ```
 
 ## How to Run
@@ -48,11 +49,12 @@ private static final String SERVER_URL = "http://your-ec2-ip:8080/CS6650-Server/
 Main settings can be found in MultithreadedClient.java:
 
  ```bash
-INITIAL_THREAD_COUNT: Initial number of threads (default: 32)
-REQUESTS_PER_THREAD: Requests per thread (default: 1000)
-TOTAL_REQUESTS: Total number of requests to send (default: 200000)
-PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32)
-QUEUE_CAPACITY: Event queue size (default: 10000)
+INITIAL_THREAD_COUNT: Initial number of threads (default: 32);
+REQUESTS_PER_THREAD: Requests per thread (default: 1000);
+TOTAL_REQUESTS: Total number of requests to send (default: 200000);
+PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 64);
+QUEUE_CAPACITY: Event queue size (default: 10000);
+BATCH_SIZE = 500;
  ```
 
 ## How to Run
