@@ -12,6 +12,12 @@ Implementation of a multithreaded client and server for processing ski lift usag
 - `client1/`: Basic client implementation
 - `client2/`: Enhanced client with performance monitoring
 
+### /Assignment2
+Implementation of a distributed system with message queuing for asynchronous processing of ski data.
+* `server/`: Enhanced server with RabbitMQ integration and request validation
+* `client2/`: Optimized client with performance tuning
+* `consumer/`: Multithreaded RabbitMQ consumer application
+
 ### Future Assignments
 Additional assignments will be added to their respective directories as the course progresses.
 
