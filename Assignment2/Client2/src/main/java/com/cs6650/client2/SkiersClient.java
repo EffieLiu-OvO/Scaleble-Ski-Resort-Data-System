@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 
 public class SkiersClient {
     private static final HttpClient client = HttpClient.newHttpClient();
-    private static final String SERVER_URL = "http://Localhost:8080/CS6650-Server/skiers";
+    private static final String SERVER_URL = "http://skier-target-group-1803267666.us-west-2.elb.amazonaws.com/CS6650-Server/skiers";
     private static final int MAX_RETRIES = 5;
     private static final int RETRY_DELAY_MS = 100;
     private final List<RequestRecord> records;

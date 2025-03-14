@@ -18,6 +18,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>5.18.0</version>
+    </dependency>
+
     <!-- Gson for JSON handling -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
