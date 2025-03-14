@@ -1,86 +1,73 @@
-# Client 1 - Basic Ski Resort Data Client  
+# Assignment 2 - Distributed Ski Data Processing System
 
-## Setup and Configuration  
+## Overview
+This assignment extends Assignment 1 by implementing a distributed message processing system for ski resort data. The system uses RabbitMQ for asynchronous communication between components, enhancing scalability and throughput.
 
-### URL Configuration  
-To change the server URL, modify the `SERVER_URL` constant in `SkiersClient.java`:  
+### Components
+1. Server
+Enhanced servlet implementation that validates requests and forwards them to a RabbitMQ queue.
 
-```java
-private static final String SERVER_URL = "http://your-ec2-ip:8080/CS6650-Server/skiers";
+Validates URL paths and JSON payloads
+Uses a channel pool to efficiently communicate with RabbitMQ
+Returns appropriate HTTP status codes to clients
+
+2. Client2
+Optimized multithreaded client for performance testing.
+
+Configurable thread counts and batch sizes
+Collects detailed performance metrics
+Supports two-phase load testing
+
+Note: When running locally, you must change the server URL in SkiersClient.java:
+ 
+ ```bash
+For load balancer testing: http://skier-target-group-1803267666.us-west-2.elb.amazonaws.com/CS6650-Server/skiers
+For single instance testing: Use the IP address of a specific server instance
 ```
 
-## Client Configuration Settings
+3. Consumer
+Multithreaded application that processes messages from RabbitMQ.
 
-Main settings can be found in MultithreadedClient.java:
+Maintains thread-safe records of skier activities
+Configurable number of consumer threads
+Uses prefetching to optimize message retrieval
 
- ```bash
-INITIAL_THREAD_COUNT: Initial number of threads (default: 32);
-REQUESTS_PER_THREAD: Requests per thread (default: 1000);
-TOTAL_REQUESTS: Total number of requests to send (default: 200000);
-PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32);
-QUEUE_CAPACITY: Event queue size (default: 10000);
-```
+### Setup Instructions
+1. RabbitMQ:
 
-## How to Run
+Deploy on a dedicated EC2 instance
+Enable management console for monitoring
 
-1. Ensure correct SERVER_URL in SkiersClient.java
-2. Run MultithreadedClient.java
-3. The client will output:
-``` bash
-Client configuration
-Total successful/failed requests
-Total run time
-Throughput (requests/second)
-```
+2. Server:
 
-# Client 2 - Enhanced Ski Resort Data Client with Performance Monitoring
-## Setup and Configuration  
+Deploy on one or more EC2 instances
+Configure to connect to the RabbitMQ instance
+For load balancing, deploy multiple instances and configure with AWS ELB
 
-### URL Configuration  
-To change the server URL, modify the `SERVER_URL` constant in `SkiersClient.java`:  
+3. Consumer:
 
-```java
-private static final String SERVER_URL = "http://your-ec2-ip:8080/CS6650-Server/skiers";
-```
+Deploy on a separate EC2 instance
+Configure environment variables to connect to RabbitMQ:
 
-## Client Configuration Settings
+RABBITMQ_HOST
+RABBITMQ_USERNAME
+RABBITMQ_PASSWORD
 
-Main settings can be found in MultithreadedClient.java:
+4. Client:
 
- ```bash
-INITIAL_THREAD_COUNT: Initial number of threads (default: 32)
-REQUESTS_PER_THREAD: Requests per thread (default: 1000)
-TOTAL_REQUESTS: Total number of requests to send (default: 200000)
-PHASE2_THREAD_COUNT: Number of threads for phase 2 (default: 32)
-QUEUE_CAPACITY: Event queue size (default: 10000)
- ```
+Run locally or on EC2 instance
+Update server URL to point to load balancer or individual server instance
 
-## How to Run
 
-1. Ensure correct SERVER_URL in SkiersClient.java
-2. Run MultithreadedClient.java
-3. The client will output:
- ```bash
-Client configuration
-Total successful/failed requests
-Total run time
-Throughput (requests/second)
+## Testing
 
-Performance statistics
-Mean response time
-Median response time
-p99 response time
-Min/Max response times
- ```
+Important: All testing should be performed using the Client2 application, which has been optimized for this assignment with proper metrics collection and reporting.
+The system should be tested with various configurations to find optimal settings for:
 
-## Generated Files
+Client thread counts (adjust INITIAL_THREAD_COUNT and PHASE2_THREAD_COUNT)
+Consumer thread counts
+RabbitMQ queue management
+Server connection pool sizes
 
-1. request_records.csv: Contains detailed metrics for each request
-2. throughput_plot.png (please run this): Visual representation of throughput over time 
- *remember to change the path to request_records.csv accordingly.
-
- ```bash
-public static void main(String[] args) {
-        String csvFile = "C:/Users/liume_lhvc42h/Desktop/CS6650-Assignments/Assignment1/Client2/request_records.csv";)
- ```
+Monitor queue length in RabbitMQ management console to ensure it stays below 1000 messages. The test results should compare performance between single-instance deployment and load-balanced deployment.
  
