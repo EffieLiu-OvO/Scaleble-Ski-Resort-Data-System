@@ -1,2 +1,7 @@
-C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment2\Consumer\src\main\java\com\cs6650\consumer\SkierLiftRideConsumer.java
-C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment2\Consumer\src\main\java\com\cs6650\consumer\SkierRecord.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\db\DynamoDBManager.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\model\ResortDaySummary.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\model\SkierDaySummary.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\model\SkierLiftRide.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\SkierLiftRideConsumer.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\SkierRecord.java
+C:\Users\liume_lhvc42h\Desktop\CS6650-Assignments\Assignment3\Consumer\src\main\java\com\cs6650\consumer\test\DynamoDBConnectionTest.java

@@ -34,6 +34,19 @@
       <artifactId>slf4j-simple</artifactId>
       <version>1.7.36</version>
     </dependency>
+    <!-- AWS SDK for DynamoDB -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>dynamodb</artifactId>
+      <version>2.20.26</version>
+    </dependency>
+
+    <!-- AWS SDK for DynamoDB Enhanced Client -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>dynamodb-enhanced</artifactId>
+      <version>2.20.26</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -36,7 +36,7 @@ public class SkiersServlet extends HttpServlet {
             logger.info("Initializing RabbitMQ connection...");
 
             ConnectionFactory factory = new ConnectionFactory();
-            factory.setHost("35.88.230.164");
+            factory.setHost("34.217.89.157");
             factory.setPort(5672);
             factory.setUsername("guest");
             factory.setPassword("guest");
