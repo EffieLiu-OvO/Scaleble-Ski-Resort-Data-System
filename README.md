@@ -18,6 +18,12 @@ Implementation of a distributed system with message queuing for asynchronous pro
 * `client2/`: Optimized client with performance tuning
 * `consumer/`: Multithreaded RabbitMQ consumer application
 
+### /Assignment3
+Implementation of database persistence layer to store ski lift usage data.
+* `consumer/`: Enhanced consumer with DynamoDB integration
+* `models/`: Data models for database representation
+* `documentation/`: Performance test results and database design documentation
+
 ### Future Assignments
 Additional assignments will be added to their respective directories as the course progresses.
 
