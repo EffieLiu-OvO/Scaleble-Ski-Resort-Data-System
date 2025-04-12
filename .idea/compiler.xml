@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="CS6650-Server" />
+        <module name="CS6650-Client (2)" />
+        <module name="CS6650-Client (1)" />
+        <module name="Get_Server" />
+        <module name="CS6650-Server (1)" />
+        <module name="CS6650-Server (2)" />
+        <module name="CS6650-Server (3)" />
+        <module name="CS6650-Server (4)" />
+        <module name="CS6650-Server (5)" />
+        <module name="CS6650-Server (6)" />
+        <module name="consumer (2)" />
+        <module name="consumer" />
+        <module name="consumer (1)" />
+        <module name="CS6650-Client" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="11" />
+  </component>
+</project>
