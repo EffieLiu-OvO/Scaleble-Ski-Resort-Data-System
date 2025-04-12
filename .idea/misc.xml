@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/Assignment1/Server/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment1/Client1/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment1/Client2/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment2/Server/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment2/Client1/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment2/Client2/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment2/Consumer/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment3/Server/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment3/Client2/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment3/Consumer/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment4/Server/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment4/Client2/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment4/Consumer/pom.xml" />
+        <option value="$PROJECT_DIR$/Assignment4/Get_Server/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="21" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>
