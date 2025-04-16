@@ -137,14 +137,16 @@ public class SkierLiftRideConsumer {
 
             executorService.submit(() -> {
                 try {
-                    Thread.sleep(30000);
+//                    Thread.sleep(30000);
+                    Thread.sleep(5000);
                     while(true) {
                         try {
                             processSummaryData();
                         } catch(Exception e) {
                             logger.log(Level.SEVERE, "Error in summary processing", e);
                         }
-                        Thread.sleep(30000);
+//                        Thread.sleep(30000);
+                        Thread.sleep(5000);
                     }
                 } catch(InterruptedException e) {
                     logger.log(Level.WARNING, "Summary thread interrupted", e);
@@ -313,17 +315,16 @@ public class SkierLiftRideConsumer {
                             skierSummary.setResortID(resortID);
                             skierSummary.setTotalRides(record.getTotalLiftRides());
                             skierSummary.setTotalVertical(record.getTotalVertical());
-
                             HashSet<Integer> liftsRidden = new HashSet<>();
                             liftsRidden.add(1);
                             skierSummary.setLiftsRidden(liftsRidden);
-
                             skierSummaries.add(skierSummary);
 
                             // 2. Build ResortDaySummary
                             int seasonID = record.getSeasonID();
 //                            logger.info(seasonID + "currently is");
                             String resortDayId = resortID + "#"+ seasonID + "#" + dayID;
+//                            logger.info(resortDayId);
 
                             // Only look inside batchResortSummaries
                             ResortDaySummary resortSummary = batchResortSummaries.get(resortDayId);
@@ -338,9 +339,11 @@ public class SkierLiftRideConsumer {
                                 resortSummary.setSeasonID(seasonID);
                                 resortSummary.setUniqueSkiers(new HashSet<>());
                                 batchResortSummaries.put(resortDayId, resortSummary);
+//                                logger.info("Created new ResortDaySummary: " + resortDayId);
                             }
                             // Always add skier to the set
                             resortSummary.getUniqueSkiers().add(skierID);
+//                            logger.info("Added skierID=" + skierID + " to ResortDaySummary: " + resortDayId);
 
                         } catch (Exception e) {
                             logger.log(Level.WARNING, "Error processing summary for skier " + skierID + " on day " + dayID, e);
@@ -353,7 +356,7 @@ public class SkierLiftRideConsumer {
             if (!skierSummaries.isEmpty()) {
                 try {
                     dbManager.batchUpdateSkierDaySummaries(skierSummaries);
-                    logger.info("Updated " + skierSummaries.size() + " skier day summaries");
+//                    logger.info("Updated " + skierSummaries.size() + " skier day summaries");
                 } catch (Exception e) {
                     logger.log(Level.SEVERE, "Failed to update skier day summaries", e);
                     for (SkierDaySummary summary : skierSummaries) {
@@ -370,19 +373,19 @@ public class SkierLiftRideConsumer {
 
             // Save resort summaries to DynamoDB
             if (!batchResortSummaries.isEmpty()) {
-                logger.info("Ready to write " + batchResortSummaries.size() + " resort day summaries..."); // ADD THIS LINE
+//                logger.info("Ready to write " + batchResortSummaries.size() + " resort day summaries..."); // ADD THIS LINE
                 try {
                     List<ResortDaySummary> resortList = new ArrayList<>(batchResortSummaries.values());
                     dbManager.batchUpdateResortDaySummaries(resortList);
-                    logger.info("Updated " + resortList.size() + " resort day summaries");
+//                    logger.info("Updated " + resortList.size() + " resort day summaries");
 
                     // Only update in-memory cache after successful write
                     for (ResortDaySummary summary : resortList) {
-                        logger.info("About to save ResortDaySummary: id=" + summary.getId() +
-                                ", resortID=" + summary.getResortID() +
-                                ", seasonID=" + summary.getSeasonID() +
-                                ", dayID=" + summary.getDayID() +
-                                ", uniqueSkiers=" + summary.getUniqueSkiers().size());
+//                        logger.info("About to save ResortDaySummary: id=" + summary.getId() +
+//                                ", resortID=" + summary.getResortID() +
+//                                ", seasonID=" + summary.getSeasonID() +
+//                                ", dayID=" + summary.getDayID() +
+//                                ", uniqueSkiers=" + summary.getUniqueSkiers().size());
 
                         resortDaySummaries.put(summary.getId(), summary);
                     }
@@ -427,6 +430,8 @@ public class SkierLiftRideConsumer {
             int seasonID = liftRideJson.get("seasonID").getAsInt();
             int verticalGain = liftID * 10;
 
+//            logger.info("Processing message for skierID=" + skierID + ", resortID=" + resortID + ", dayID=" + dayID + ", seasonID=" + seasonID);
+
             skierResortDayRecords.computeIfAbsent(skierID, k -> new ConcurrentHashMap<>())
                     .computeIfAbsent(resortID, k -> new ConcurrentHashMap<>())
                     .compute(dayID, (key, record) -> {
@@ -464,6 +469,17 @@ public class SkierLiftRideConsumer {
                 });
             }
             messageCounter.incrementAndGet();
+            // Trigger early flush if buffer is too large
+            if (skierResortDayRecords.size() > 1000) {
+                logger.info("Triggering early flush of summaries due to memory size...");
+                batchWriteExecutor.submit(() -> {
+                    try {
+                        processSummaryData();
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Early flush failed", e);
+                    }
+                });
+            }
         } catch(Exception e){
             logger.log(Level.WARNING,"Error processing message: " + message, e);
         }

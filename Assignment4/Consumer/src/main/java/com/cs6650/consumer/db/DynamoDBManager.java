@@ -246,7 +246,9 @@ public class DynamoDBManager {
      * @param summaries list of ResortDaySummary records.
      */
     public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries){
-        if(summaries.isEmpty()) return; // No summaries to update
+        if(summaries.isEmpty()) {
+            logger.warning("No resort day summaries provided for batch update.");
+            return;}; // No summaries to update
         try{
             Map<String, ResortDaySummary> mergedSummaries = new HashMap<>();
             for(ResortDaySummary summary : summaries){
@@ -255,6 +257,10 @@ public class DynamoDBManager {
                     summary.setIdFromParts(summary.getResortID(), summary.getSeasonID(), summary.getDayID());
                 }
                 String id = summary.getId(); // <-- move AFTER setting id properly!
+                logger.info("Processing summary: id=" + id + ", resortID=" + summary.getResortID() +
+                        ", seasonID=" + summary.getSeasonID() + ", dayID=" + summary.getDayID() +
+                        ", uniqueSkiers=" + summary.getUniqueSkiers().size());
+
                 ResortDaySummary existing = mergedSummaries.get(id);
 
                 if(existing!=null){
@@ -268,6 +274,11 @@ public class DynamoDBManager {
             }
             // Save merged results to table
             for (ResortDaySummary summary : mergedSummaries.values()) {
+                logger.info("Writing to DynamoDB: id=" + summary.getId() +
+                        ", resortID=" + summary.getResortID() +
+                        ", seasonID=" + summary.getSeasonID() +
+                        ", dayID=" + summary.getDayID() +
+                        ", total unique skiers=" + summary.getUniqueSkiers().size());
                 resortDaySummaryTable.putItem(summary);
             }
             logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (after merging)");
