@@ -1,11 +1,15 @@
 package com.cs6650.consumer;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 public class SkierRecord {
     private final int skierID;
     private final AtomicInteger totalLiftRides;
     private final AtomicInteger totalVertical;
+    private final Set<Integer> liftsRidden = ConcurrentHashMap.newKeySet();
 
     // season ID
     private int seasonID;
@@ -38,6 +42,13 @@ public class SkierRecord {
 
     public int getTotalVertical() {
         return totalVertical.get();
+    }
+
+    /**
+     * Returns an unmodifiable view of the lifts ridden so far
+     */
+    public Set<Integer> getLiftsRidden() {
+        return Collections.unmodifiableSet(liftsRidden);
     }
 
     @Override

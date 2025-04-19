@@ -192,6 +192,9 @@ public class DynamoDBManager {
             throw e;
         }
     }
+    /**
+     * Batch updates SkierDaySummary records with merge logic to aggregate rides and lifts.
+     */
     public void batchUpdateSkierDaySummaries(List<SkierDaySummary> summaries){
         if(summaries.isEmpty()) return;
         try{
@@ -216,28 +219,6 @@ public class DynamoDBManager {
             throw e;
         }
     }
-//    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries){
-//        if(summaries.isEmpty()) return;
-//        try{
-//            Map<String,ResortDaySummary> mergedSummaries = new HashMap<>();
-//            for(ResortDaySummary summary : summaries){
-//                String id = summary.getId();
-//                ResortDaySummary existing = mergedSummaries.get(id);
-//                if(existing!=null){
-//                    existing.getUniqueSkiers().addAll(summary.getUniqueSkiers());
-//                } else {
-//                    mergedSummaries.put(id,summary);
-//                }
-//            }
-//            for(ResortDaySummary summary : mergedSummaries.values()){
-//                resortDaySummaryTable.putItem(summary);
-//            }
-//            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (after merging)");
-//        } catch(Exception e){
-//            logger.log(Level.SEVERE,"Failed to batch update resort day summaries",e);
-//            throw e;
-//        }
-//    }
 
     // wy version
     /**
@@ -245,37 +226,52 @@ public class DynamoDBManager {
      * If multiple records have the same ID, their unique skiers are merged.
      * @param summaries list of ResortDaySummary records.
      */
-    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries){
-        if(summaries.isEmpty()) return; // No summaries to update
-        try{
+    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries) {
+        if (summaries.isEmpty()) {
+            logger.warning("No resort day summaries provided for batch update.");
+            return;
+        }
+
+        try {
+            // Use a map to merge summaries by ID
             Map<String, ResortDaySummary> mergedSummaries = new HashMap<>();
-            for(ResortDaySummary summary : summaries){
-                // Ensure ID is set
+
+            for (ResortDaySummary summary : summaries) {
+                // // Auto-generate ID if missing
                 if (summary.getId() == null || summary.getId().isEmpty()) {
                     summary.setIdFromParts(summary.getResortID(), summary.getSeasonID(), summary.getDayID());
                 }
-                String id = summary.getId(); // <-- move AFTER setting id properly!
-                ResortDaySummary existing = mergedSummaries.get(id);
+                String id = summary.getId();
 
-                if(existing!=null){
-                    existing.getUniqueSkiers().addAll(summary.getUniqueSkiers());
+                // If already exists, merge the count
+                ResortDaySummary existing = mergedSummaries.get(id);
+                if (existing != null) {
+                    existing.setUniqueSkierCount(
+                            existing.getUniqueSkierCount() + summary.getUniqueSkierCount()
+                    );
                 } else {
-                    if (summary.getId() == null || summary.getId().isEmpty()) {
-                        summary.setIdFromParts(summary.getResortID(), summary.getSeasonID(), summary.getDayID() );
-                    }
-                    mergedSummaries.put(id,summary);
+                    mergedSummaries.put(id, summary);
                 }
             }
-            // Save merged results to table
+
+            // Write merged summaries to DynamoDB
             for (ResortDaySummary summary : mergedSummaries.values()) {
+                logger.info("Writing to DynamoDB: id=" + summary.getId() +
+                        ", resortID=" + summary.getResortID() +
+                        ", seasonID=" + summary.getSeasonID() +
+                        ", dayID=" + summary.getDayID() +
+                        ", uniqueSkierCount=" + summary.getUniqueSkierCount());
                 resortDaySummaryTable.putItem(summary);
             }
-            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (after merging)");
+
+            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (merged by count)");
+
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to batch update resort day summaries", e);
             throw e;
         }
     }
+
 
     public int getSkierDaysCount(int skierID){
         try{
@@ -304,7 +300,7 @@ public class DynamoDBManager {
         String resortDayId = resortID + "#" + seasonID + "#" + dayID;
         try {
             ResortDaySummary key = new ResortDaySummary();
-            key.setId(resortDayId); // must set id manually
+            key.setId(resortDayId); // // Must set ID for primary key lookup
             return resortDaySummaryTable.getItem(key);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to fetch ResortDaySummary for id: " + resortDayId, e);
@@ -354,4 +350,51 @@ public class DynamoDBManager {
             logger.log(Level.SEVERE,"Failed to run diagnostics",e);
         }
     }
+
+    /**
+     * Atomically increments the unique skier count and total visits in ResortDaySummaries table.
+     * If the row doesn't exist, this also sets the static fields.
+     *
+     * @param id combined primary key "resortID#seasonID#dayID"
+     * @param increment number of new unique skiers to add
+     * @param totalRides number of total lift rides to add
+     * @param resortID resort ID
+     * @param seasonID season ID
+     * @param dayID day ID
+     */
+    public void incrementUniqueSkierCount(String id, int increment, int totalRides, int resortID, int seasonID, int dayID) {
+        // Build key for lookup
+        Map<String, AttributeValue> key = Map.of(
+                "id", AttributeValue.builder().s(id).build()
+        );
+        // Expression values for the update
+        Map<String, AttributeValue> values = Map.of(
+                ":inc", AttributeValue.builder().n(String.valueOf(increment)).build(),
+                ":inc2", AttributeValue.builder().n(String.valueOf(totalRides)).build(),
+                ":resort", AttributeValue.builder().n(String.valueOf(resortID)).build(),
+                ":season", AttributeValue.builder().n(String.valueOf(seasonID)).build(),
+                ":day", AttributeValue.builder().n(String.valueOf(dayID)).build()
+        );
+
+        // Update expression with SET and ADD
+        UpdateItemRequest request = UpdateItemRequest.builder()
+                .tableName("ResortDaySummaries")
+                .key(key)
+                .updateExpression(
+                        "SET resortID = if_not_exists(resortID, :resort), " +
+                                "seasonID = if_not_exists(seasonID, :season), " +
+                                "dayID = if_not_exists(dayID, :day) " + // <== no comma
+                                " ADD uniqueSkierCount :inc, totalSkierVisits :inc2"
+                )
+                .expressionAttributeValues(values)
+                .build();
+
+        try {
+            dynamoDbClient.updateItem(request);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to increment uniqueSkierCount for id=" + id, e);
+            throw e;
+        }
+    }
+
 }

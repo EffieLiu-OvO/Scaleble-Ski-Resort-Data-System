@@ -5,23 +5,26 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Represents a summary of unique skier visits for a specific resort, season, and day.
+ * Represents a summary of skier visits for a given resort on a specific day of a season.
  *
- * Mapped to the DynamoDB table \"ResortDaySummaries\".
+ * This model is mapped to the DynamoDB table "ResortDaySummaries" using the Enhanced Client API.
  *
- * Composite key format: "resortID#seasonID#dayID"
+ * The primary key is a composite string: "resortID#seasonID#dayID".
+ * It stores the total number of unique skiers and total ride events for that day.
  */
 @DynamoDbBean
 public class ResortDaySummary {
-//    private String id; //resortID#dayID
+    // Composite key for DynamoDB: resortID#seasonID#dayID
     private String id; // resortID#seasonID#dayID
     private int resortID;
     private int dayID;
-    private Set<Integer> uniqueSkiers; // Set of skier IDs that visited on this day
+    // Number of unique skiers who visited on this day
+    private int uniqueSkierCount; // Set of skier IDs that visited on this day
     private int seasonID; // for season id
+    // Total number of lift rides taken by all skiers on this day
+    private int totalSkierVisits;
 
     public ResortDaySummary() {
-        this.uniqueSkiers = new HashSet<>();
     }
 
     @DynamoDbPartitionKey
@@ -42,6 +45,7 @@ public class ResortDaySummary {
         this.id = resortID + "#" + seasonID + "#" + dayID;
     }
 
+    @DynamoDbAttribute("resortID")
     public int getResortID() {
         return resortID;
     }
@@ -50,6 +54,7 @@ public class ResortDaySummary {
         this.resortID = resortID;
     }
 
+    @DynamoDbAttribute("dayID")
     public int getDayID() {
         return dayID;
     }
@@ -58,18 +63,23 @@ public class ResortDaySummary {
         this.dayID = dayID;
     }
 
+    @DynamoDbAttribute("seasonID")
     public int getSeasonID() { return seasonID; }
     public void setSeasonID(int seasonID) { this.seasonID = seasonID; }
 
-    public Set<Integer> getUniqueSkiers() {
-        return uniqueSkiers;
+    @DynamoDbAttribute("uniqueSkierCount")
+    public int getUniqueSkierCount() { return uniqueSkierCount; }
+
+    public void setUniqueSkierCount(int uniqueSkierCount) {
+        this.uniqueSkierCount = uniqueSkierCount;
     }
 
-    public void setUniqueSkiers(Set<Integer> uniqueSkiers) {
-        this.uniqueSkiers = uniqueSkiers;
+    @DynamoDbAttribute("totalSkierVisits")
+    public int getTotalSkierVisits() {
+        return totalSkierVisits;
     }
 
-    public int getUniqueSkierCount() {
-        return uniqueSkiers.size();
+    public void setTotalSkierVisits(int totalSkierVisits) {
+        this.totalSkierVisits = totalSkierVisits;
     }
 }
