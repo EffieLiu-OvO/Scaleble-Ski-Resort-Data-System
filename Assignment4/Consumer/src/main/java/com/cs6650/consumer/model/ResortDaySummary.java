@@ -5,20 +5,24 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Represents a summary of unique skier visits for a specific resort, season, and day.
+ * Represents a summary of skier visits for a given resort on a specific day of a season.
  *
- * Mapped to the DynamoDB table \"ResortDaySummaries\".
+ * This model is mapped to the DynamoDB table "ResortDaySummaries" using the Enhanced Client API.
  *
- * Composite key format: "resortID#seasonID#dayID"
+ * The primary key is a composite string: "resortID#seasonID#dayID".
+ * It stores the total number of unique skiers and total ride events for that day.
  */
 @DynamoDbBean
 public class ResortDaySummary {
-    //    private String id; //resortID#dayID
+    // Composite key for DynamoDB: resortID#seasonID#dayID
     private String id; // resortID#seasonID#dayID
     private int resortID;
     private int dayID;
+    // Number of unique skiers who visited on this day
     private int uniqueSkierCount; // Set of skier IDs that visited on this day
     private int seasonID; // for season id
+    // Total number of lift rides taken by all skiers on this day
+    private int totalSkierVisits;
 
     public ResortDaySummary() {
     }
@@ -68,5 +72,14 @@ public class ResortDaySummary {
 
     public void setUniqueSkierCount(int uniqueSkierCount) {
         this.uniqueSkierCount = uniqueSkierCount;
+    }
+
+    @DynamoDbAttribute("totalSkierVisits")
+    public int getTotalSkierVisits() {
+        return totalSkierVisits;
+    }
+
+    public void setTotalSkierVisits(int totalSkierVisits) {
+        this.totalSkierVisits = totalSkierVisits;
     }
 }

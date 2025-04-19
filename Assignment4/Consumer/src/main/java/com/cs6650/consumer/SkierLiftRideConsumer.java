@@ -30,15 +30,22 @@ public class SkierLiftRideConsumer {
     private static final Logger logger = Logger.getLogger(SkierLiftRideConsumer.class.getName());
     private static final String QUEUE_NAME = "skier_lift_rides";
     private static final Gson gson = new Gson();
+    // Nested map to store skier records: skierID -> resortID -> dayID -> SkierRecord
     private static final Map<Integer, Map<Integer, Map<Integer, SkierRecord>>> skierResortDayRecords = new ConcurrentHashMap<>();
+    // Summary records for resort-day data: resortID#seasonID#dayID -> ResortDaySummary
     private static final Map<String, ResortDaySummary> resortDaySummaries = new ConcurrentHashMap<>();
     private static final int BATCH_THRESHOLD = 20;
     private static final ThreadLocal<List<SkierLiftRide>> threadLocalLiftRideBatch = ThreadLocal.withInitial(ArrayList::new);
+    // Executor service for background batch writes
     private static final ExecutorService batchWriteExecutor = Executors.newFixedThreadPool(40);
     private static final AtomicLong messageCounter = new AtomicLong(0);
     private static final AtomicLong lastCount = new AtomicLong(0);
     private static long lastTimestamp = System.currentTimeMillis();
     private static DynamoDBManager dbManager;
+    // In-memory tracking of unique skier IDs and visit counts per resort-day
+    private static final Map<String, Set<Integer>> resortDayNewSkiers = new ConcurrentHashMap<>();
+    private static final Map<String, Integer> resortDayTotalVisits = new ConcurrentHashMap<>();
+
 
     public static void main(String[] args) {
         // whether to use local DynamoDB
@@ -136,6 +143,7 @@ public class SkierLiftRideConsumer {
                 }
             });
 
+            // Periodically flush aggregated summaries to DB
             executorService.submit(() -> {
                 try {
 //                    Thread.sleep(30000);
@@ -147,6 +155,7 @@ public class SkierLiftRideConsumer {
                             logger.log(Level.SEVERE, "Error in summary processing", e);
                         }
 //                        Thread.sleep(30000);
+                        // Interval between flushes
                         Thread.sleep(1000);
                     }
                 } catch(InterruptedException e) {
@@ -178,7 +187,6 @@ public class SkierLiftRideConsumer {
             }
 
             List<SkierDaySummary> skierSummaries = new ArrayList<>();
-            Map<String, Set<Integer>> resortDayNewSkiers = new HashMap<>();
 
             for (Map.Entry<Integer, Map<Integer, Map<Integer, SkierRecord>>> skierEntry : skierResortDayRecords.entrySet()) {
                 int skierID = skierEntry.getKey();
@@ -194,7 +202,7 @@ public class SkierLiftRideConsumer {
                         int seasonID = record.getSeasonID();
 
                         try {
-                            // Create SkierDaySummary
+                            // // Build SkierDaySummary for individual skier
                             String skierSummaryId = skierID + "#" + dayID;
                             SkierDaySummary skierSummary = new SkierDaySummary();
                             skierSummary.setId(skierSummaryId);
@@ -209,11 +217,13 @@ public class SkierLiftRideConsumer {
                             skierSummary.setLiftsRidden(liftsRidden);
                             skierSummaries.add(skierSummary);
 
-                            // Track new unique skier for this resort-season-day
+                            // Track unique skiers per resort-season-day
                             String resortDayId = resortID + "#" + seasonID + "#" + dayID;
                             resortDayNewSkiers
                                     .computeIfAbsent(resortDayId, k -> new HashSet<>())
                                     .add(skierID);
+
+                            resortDayTotalVisits.merge(resortDayId, record.getTotalLiftRides(), Integer::sum);
 
                         } catch (Exception e) {
                             logger.log(Level.WARNING, "Error processing summary for skier " + skierID + " on day " + dayID, e);
@@ -238,10 +248,11 @@ public class SkierLiftRideConsumer {
                 }
             }
 
-            // Flush aggregated unique skier counts to DB
+            // Write resort-level summaries
             for (Map.Entry<String, Set<Integer>> entry : resortDayNewSkiers.entrySet()) {
                 String resortDayId = entry.getKey();
                 Set<Integer> skierSet = entry.getValue();
+                int totalRides = resortDayTotalVisits.getOrDefault(resortDayId, 0);
 
                 if (!skierSet.isEmpty()) {
                     String[] parts = resortDayId.split("#");
@@ -250,19 +261,22 @@ public class SkierLiftRideConsumer {
                     int dayID = Integer.parseInt(parts[2]);
                     int increment = skierSet.size();
 
-                    logger.info("Processing resortDayId: " + resortDayId + " with " + increment + " new skiers");
+                    logger.info("Processing resortDayId: " + resortDayId + " with " + increment + " new skiers and "+ totalRides + " rides");;
                     try {
                         logger.info("Calling incrementUniqueSkierCount with: id=" + resortDayId +
                                 ", resortID=" + resortID + ", seasonID=" + seasonID +
                                 ", dayID=" + dayID + ", increment=" + increment);
-                        dbManager.incrementUniqueSkierCount(resortDayId, increment, resortID, seasonID, dayID);
+                        dbManager.incrementUniqueSkierCount(resortDayId, increment,totalRides, resortID, seasonID, dayID);
                     } catch (Exception e) {
                         logger.log(Level.SEVERE, "Failed to increment unique skier count for " + resortDayId, e);
                     }
                 }
             }
             logger.info("Clearing skierResortDayRecords after successful flush.");
+            // Clear in-memory state
             skierResortDayRecords.clear();
+            resortDayNewSkiers.clear();
+            resortDayTotalVisits.clear();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing summary data", e);
         }
@@ -277,34 +291,34 @@ public class SkierLiftRideConsumer {
      * @param message JSON string containing lift ride information.
      * @param threadId ID of the consumer thread processing the message.
      */
-    private static void processMessage(String message, int threadId){
-        try{
+    private static void processMessage(String message, int threadId) {
+        try {
             JsonObject liftRideJson = gson.fromJson(message, JsonObject.class);
-            // Extract fields
             int skierID = liftRideJson.get("skierID").getAsInt();
             int liftID = liftRideJson.get("liftID").getAsInt();
             int resortID = liftRideJson.get("resortID").getAsInt();
             int dayID = liftRideJson.get("dayID").getAsInt();
             int time = liftRideJson.get("time").getAsInt();
-            // season id
             int seasonID = liftRideJson.get("seasonID").getAsInt();
             int verticalGain = liftID * 10;
 
-//            logger.info("Processing message for skierID=" + skierID + ", resortID=" + resortID + ", dayID=" + dayID + ", seasonID=" + seasonID);
+            String resortDayId = resortID + "#" + seasonID + "#" + dayID;
 
+            // Update in-memory skier record structure
             skierResortDayRecords.computeIfAbsent(skierID, k -> new ConcurrentHashMap<>())
                     .computeIfAbsent(resortID, k -> new ConcurrentHashMap<>())
                     .compute(dayID, (key, record) -> {
-                        if(record == null) {
+                        if (record == null) {
                             record = new SkierRecord(skierID, seasonID);
-                        } else if (record.getSeasonID() == 0) {  // <- ADD THIS
-                            record.setSeasonID(seasonID);
                         }
                         record.addLiftRide(liftID, verticalGain);
                         return record;
                     });
+            // Track resort-day unique skier and visit
+            resortDayNewSkiers.computeIfAbsent(resortDayId, k -> ConcurrentHashMap.newKeySet()).add(skierID);
+            resortDayTotalVisits.merge(resortDayId, 1, Integer::sum);
 
-            // Create a SkierLiftRide record
+            // Build lift ride record
             SkierLiftRide liftRide = new SkierLiftRide();
             liftRide.setId(skierID + "#" + dayID + "#" + time);
             liftRide.setSkierID(skierID);
@@ -313,35 +327,25 @@ public class SkierLiftRideConsumer {
             liftRide.setLiftID(liftID);
             liftRide.setTime(time);
             liftRide.setVertical(verticalGain);
+
             List<SkierLiftRide> localBatch = threadLocalLiftRideBatch.get();
             localBatch.add(liftRide);
-            // When batch threshold is reached, submit for asynchronous batch save
-            if(localBatch.size()>=BATCH_THRESHOLD){
+
+            // If threshold reached, submit for async batch save
+            if (localBatch.size() >= BATCH_THRESHOLD) {
                 List<SkierLiftRide> batchToWrite = new ArrayList<>(localBatch);
                 localBatch.clear();
                 batchWriteExecutor.submit(() -> {
-                    try{
+                    try {
                         dbManager.batchSaveLiftRides(batchToWrite);
-//                        logger.info("Asynchronously processed batch of " + batchToWrite.size() + " items.");
-                    } catch(Exception e){
-                        logger.log(Level.SEVERE,"Error processing asynchronous batch", e);
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Error processing asynchronous batch", e);
                     }
                 });
             }
             messageCounter.incrementAndGet();
-            // Trigger early flush if buffer is too large
-            if (skierResortDayRecords.size() > 1000) {
-//                logger.info("Triggering early flush of summaries due to memory size...");
-                batchWriteExecutor.submit(() -> {
-                    try {
-                        processSummaryData();
-                    } catch (Exception e) {
-                        logger.log(Level.SEVERE, "Early flush failed", e);
-                    }
-                });
-            }
-        } catch(Exception e){
-            logger.log(Level.WARNING,"Error processing message: " + message, e);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error processing message: " + message, e);
         }
     }
 }
