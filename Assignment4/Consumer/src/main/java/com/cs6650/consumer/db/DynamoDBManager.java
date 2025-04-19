@@ -216,28 +216,6 @@ public class DynamoDBManager {
             throw e;
         }
     }
-//    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries){
-//        if(summaries.isEmpty()) return;
-//        try{
-//            Map<String,ResortDaySummary> mergedSummaries = new HashMap<>();
-//            for(ResortDaySummary summary : summaries){
-//                String id = summary.getId();
-//                ResortDaySummary existing = mergedSummaries.get(id);
-//                if(existing!=null){
-//                    existing.getUniqueSkiers().addAll(summary.getUniqueSkiers());
-//                } else {
-//                    mergedSummaries.put(id,summary);
-//                }
-//            }
-//            for(ResortDaySummary summary : mergedSummaries.values()){
-//                resortDaySummaryTable.putItem(summary);
-//            }
-//            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (after merging)");
-//        } catch(Exception e){
-//            logger.log(Level.SEVERE,"Failed to batch update resort day summaries",e);
-//            throw e;
-//        }
-//    }
 
     // wy version
     /**
@@ -245,48 +223,49 @@ public class DynamoDBManager {
      * If multiple records have the same ID, their unique skiers are merged.
      * @param summaries list of ResortDaySummary records.
      */
-    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries){
-        if(summaries.isEmpty()) {
+    public void batchUpdateResortDaySummaries(List<ResortDaySummary> summaries) {
+        if (summaries.isEmpty()) {
             logger.warning("No resort day summaries provided for batch update.");
-            return;}; // No summaries to update
-        try{
+            return;
+        }
+
+        try {
             Map<String, ResortDaySummary> mergedSummaries = new HashMap<>();
-            for(ResortDaySummary summary : summaries){
+
+            for (ResortDaySummary summary : summaries) {
                 // Ensure ID is set
                 if (summary.getId() == null || summary.getId().isEmpty()) {
                     summary.setIdFromParts(summary.getResortID(), summary.getSeasonID(), summary.getDayID());
                 }
-                String id = summary.getId(); // <-- move AFTER setting id properly!
-                logger.info("Processing summary: id=" + id + ", resortID=" + summary.getResortID() +
-                        ", seasonID=" + summary.getSeasonID() + ", dayID=" + summary.getDayID() +
-                        ", uniqueSkiers=" + summary.getUniqueSkiers().size());
+                String id = summary.getId();
 
                 ResortDaySummary existing = mergedSummaries.get(id);
-
-                if(existing!=null){
-                    existing.getUniqueSkiers().addAll(summary.getUniqueSkiers());
+                if (existing != null) {
+                    existing.setUniqueSkierCount(
+                            existing.getUniqueSkierCount() + summary.getUniqueSkierCount()
+                    );
                 } else {
-                    if (summary.getId() == null || summary.getId().isEmpty()) {
-                        summary.setIdFromParts(summary.getResortID(), summary.getSeasonID(), summary.getDayID() );
-                    }
-                    mergedSummaries.put(id,summary);
+                    mergedSummaries.put(id, summary);
                 }
             }
-            // Save merged results to table
+
             for (ResortDaySummary summary : mergedSummaries.values()) {
                 logger.info("Writing to DynamoDB: id=" + summary.getId() +
                         ", resortID=" + summary.getResortID() +
                         ", seasonID=" + summary.getSeasonID() +
                         ", dayID=" + summary.getDayID() +
-                        ", total unique skiers=" + summary.getUniqueSkiers().size());
+                        ", uniqueSkierCount=" + summary.getUniqueSkierCount());
                 resortDaySummaryTable.putItem(summary);
             }
-            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (after merging)");
+
+            logger.info("Successfully updated " + mergedSummaries.size() + " resort day summaries (merged by count)");
+
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to batch update resort day summaries", e);
             throw e;
         }
     }
+
 
     public int getSkierDaysCount(int skierID){
         try{
@@ -365,4 +344,37 @@ public class DynamoDBManager {
             logger.log(Level.SEVERE,"Failed to run diagnostics",e);
         }
     }
+
+    public void incrementUniqueSkierCount(String id, int increment, int resortID, int seasonID, int dayID) {
+        Map<String, AttributeValue> key = Map.of(
+                "id", AttributeValue.builder().s(id).build()
+        );
+
+        Map<String, AttributeValue> values = Map.of(
+                ":inc", AttributeValue.builder().n(String.valueOf(increment)).build(),
+                ":resort", AttributeValue.builder().n(String.valueOf(resortID)).build(),
+                ":season", AttributeValue.builder().n(String.valueOf(seasonID)).build(),
+                ":day", AttributeValue.builder().n(String.valueOf(dayID)).build()
+        );
+
+        UpdateItemRequest request = UpdateItemRequest.builder()
+                .tableName("ResortDaySummaries")
+                .key(key)
+                .updateExpression(
+                        "SET resortID = if_not_exists(resortID, :resort), " +
+                                "    seasonID = if_not_exists(seasonID, :season), " +
+                                "    dayID = if_not_exists(dayID, :day) " +
+                                "ADD uniqueSkierCount :inc"
+                )
+                .expressionAttributeValues(values)
+                .build();
+
+        try {
+            dynamoDbClient.updateItem(request);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to increment uniqueSkierCount for id=" + id, e);
+            throw e;
+        }
+    }
+
 }

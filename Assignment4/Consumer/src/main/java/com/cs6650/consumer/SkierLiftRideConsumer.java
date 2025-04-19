@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -138,7 +139,7 @@ public class SkierLiftRideConsumer {
             executorService.submit(() -> {
                 try {
 //                    Thread.sleep(30000);
-                    Thread.sleep(5000);
+                    Thread.sleep(1000);
                     while(true) {
                         try {
                             processSummaryData();
@@ -146,7 +147,7 @@ public class SkierLiftRideConsumer {
                             logger.log(Level.SEVERE, "Error in summary processing", e);
                         }
 //                        Thread.sleep(30000);
-                        Thread.sleep(5000);
+                        Thread.sleep(1000);
                     }
                 } catch(InterruptedException e) {
                     logger.log(Level.WARNING, "Summary thread interrupted", e);
@@ -159,117 +160,6 @@ public class SkierLiftRideConsumer {
             logger.log(Level.SEVERE,"Failed to start consumer", e);
         }
     }
-
-//    private static void processSummaryData() {
-//        try {
-//            if (skierResortDayRecords.isEmpty()) {
-//                logger.info("No skier records to process for summaries");
-//                return;
-//            }
-//
-//            List<SkierDaySummary> skierSummaries = new ArrayList<>();
-//            // build batch resort summaries
-//            Map<String, ResortDaySummary> batchResortSummaries = new HashMap<>();
-//
-//            for (Map.Entry<Integer, Map<Integer, Map<Integer, SkierRecord>>> skierEntry : skierResortDayRecords.entrySet()) {
-//                int skierID = skierEntry.getKey();
-//                Map<Integer, Map<Integer, SkierRecord>> resortRecords = skierEntry.getValue();
-//
-//                for (Map.Entry<Integer, Map<Integer, SkierRecord>> resortEntry : resortRecords.entrySet()) {
-//                    int resortID = resortEntry.getKey();
-//                    Map<Integer, SkierRecord> dayRecords = resortEntry.getValue();
-//
-//                    for (Map.Entry<Integer, SkierRecord> dayEntry : dayRecords.entrySet()) {
-//                        int dayID = dayEntry.getKey();
-//                        SkierRecord record = dayEntry.getValue();
-//
-//                        try {
-//                            String skierSummaryId = skierID + "#" + dayID;
-//                            SkierDaySummary skierSummary = new SkierDaySummary();
-//                            skierSummary.setId(skierSummaryId);
-//                            skierSummary.setSkierID(skierID);
-//                            skierSummary.setDayID(dayID);
-//                            skierSummary.setResortID(resortID);
-//                            skierSummary.setTotalRides(record.getTotalLiftRides());
-//                            skierSummary.setTotalVertical(record.getTotalVertical());
-//
-//                            HashSet<Integer> liftsRidden = new HashSet<>();
-//                            liftsRidden.add(1);
-//                            skierSummary.setLiftsRidden(liftsRidden);
-//
-//                            skierSummaries.add(skierSummary);
-//
-//                            int seasonID = record.getSeasonID();
-//                            logger.info(seasonID + "currently is");
-//                            String resortDayId = resortID + "#"+ seasonID + "#" + dayID;
-//                            ResortDaySummary resortSummary = batchResortSummaries.get(resortDayId);
-//                            if (resortSummary == null) {
-//                                resortSummary = resortDaySummaries.getOrDefault(resortDayId, new ResortDaySummary());
-//                                resortSummary.setId(resortDayId);
-//                                resortSummary.setResortID(resortID);
-//                                resortSummary.setDayID(dayID);
-//                                resortSummary.setSeasonID(seasonID);
-//
-//                                HashSet<Integer> uniqueSkiers = new HashSet<>();
-//                                uniqueSkiers.add(skierID);
-//                                resortSummary.setUniqueSkiers(uniqueSkiers);
-//
-//                                batchResortSummaries.put(resortDayId, resortSummary);
-//                            } else {
-//                                resortSummary.getUniqueSkiers().add(skierID);
-//                            }
-//                        } catch (Exception e) {
-//                            logger.log(Level.WARNING, "Error processing summary for skier " + skierID + " on day " + dayID, e);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            if (!skierSummaries.isEmpty()) {
-//                try {
-//                    dbManager.batchUpdateSkierDaySummaries(skierSummaries);
-//                    logger.info("Updated " + skierSummaries.size() + " skier day summaries");
-//                } catch (Exception e) {
-//                    logger.log(Level.SEVERE, "Failed to update skier day summaries", e);
-//                    for (SkierDaySummary summary : skierSummaries) {
-//                        try {
-//                            List<SkierDaySummary> singleItem = new ArrayList<>();
-//                            singleItem.add(summary);
-//                            dbManager.batchUpdateSkierDaySummaries(singleItem);
-//                        } catch (Exception ex) {
-//                            logger.log(Level.SEVERE, "Failed to update skier summary: " + summary.getId(), ex);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            if (!batchResortSummaries.isEmpty()) {
-//                try {
-//                    List<ResortDaySummary> resortList = new ArrayList<>(batchResortSummaries.values());
-//                    dbManager.batchUpdateResortDaySummaries(resortList);
-//                    logger.info("Updated " + resortList.size() + " resort day summaries");
-//
-//                    for (ResortDaySummary summary : resortList) {
-//                        resortDaySummaries.put(summary.getId(), summary);
-//                    }
-//                } catch (Exception e) {
-//                    logger.log(Level.SEVERE, "Failed to update resort day summaries", e);
-//                    for (ResortDaySummary summary : batchResortSummaries.values()) {
-//                        try {
-//                            List<ResortDaySummary> singleItem = new ArrayList<>();
-//                            singleItem.add(summary);
-//                            dbManager.batchUpdateResortDaySummaries(singleItem);
-//                        } catch (Exception ex) {
-//                            logger.log(Level.SEVERE, "Failed to update resort summary: " + summary.getId(), ex);
-//                        }
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//            logger.log(Level.SEVERE, "Error processing summary data", e);
-//        }
-//    }
-
     // wy version
     /**
      * Periodically processes in-memory skier records and writes summarized data to DynamoDB.
@@ -282,17 +172,14 @@ public class SkierLiftRideConsumer {
      */
     private static void processSummaryData() {
         try {
-            // Check if there are any skier records to process
             if (skierResortDayRecords.isEmpty()) {
                 logger.info("No skier records to process for summaries");
                 return;
             }
 
             List<SkierDaySummary> skierSummaries = new ArrayList<>();
-            // build batch resort summaries
-            Map<String, ResortDaySummary> batchResortSummaries = new HashMap<>();
+            Map<String, Set<Integer>> resortDayNewSkiers = new HashMap<>();
 
-            // Traverse skier records to generate summaries
             for (Map.Entry<Integer, Map<Integer, Map<Integer, SkierRecord>>> skierEntry : skierResortDayRecords.entrySet()) {
                 int skierID = skierEntry.getKey();
                 Map<Integer, Map<Integer, SkierRecord>> resortRecords = skierEntry.getValue();
@@ -304,9 +191,10 @@ public class SkierLiftRideConsumer {
                     for (Map.Entry<Integer, SkierRecord> dayEntry : dayRecords.entrySet()) {
                         int dayID = dayEntry.getKey();
                         SkierRecord record = dayEntry.getValue();
+                        int seasonID = record.getSeasonID();
 
                         try {
-                            // 1. Build SkierDaySummary
+                            // Create SkierDaySummary
                             String skierSummaryId = skierID + "#" + dayID;
                             SkierDaySummary skierSummary = new SkierDaySummary();
                             skierSummary.setId(skierSummaryId);
@@ -315,35 +203,17 @@ public class SkierLiftRideConsumer {
                             skierSummary.setResortID(resortID);
                             skierSummary.setTotalRides(record.getTotalLiftRides());
                             skierSummary.setTotalVertical(record.getTotalVertical());
+
                             HashSet<Integer> liftsRidden = new HashSet<>();
                             liftsRidden.add(1);
                             skierSummary.setLiftsRidden(liftsRidden);
                             skierSummaries.add(skierSummary);
 
-                            // 2. Build ResortDaySummary
-                            int seasonID = record.getSeasonID();
-//                            logger.info(seasonID + "currently is");
-                            String resortDayId = resortID + "#"+ seasonID + "#" + dayID;
-//                            logger.info(resortDayId);
-
-                            // Only look inside batchResortSummaries
-                            ResortDaySummary resortSummary = batchResortSummaries.get(resortDayId);
-                            // If this resort/day summary doesn't exist yet, create it
-                            if (resortSummary == null) {
-                                // First time, create new
-                                resortSummary = new ResortDaySummary();
-//                                resortSummary.setId(resortDayId);
-                                resortSummary.setResortID(resortID);
-                                resortSummary.setDayID(dayID);
-                                resortSummary.setIdFromParts(resortID, seasonID, dayID);
-                                resortSummary.setSeasonID(seasonID);
-                                resortSummary.setUniqueSkiers(new HashSet<>());
-                                batchResortSummaries.put(resortDayId, resortSummary);
-//                                logger.info("Created new ResortDaySummary: " + resortDayId);
-                            }
-                            // Always add skier to the set
-                            resortSummary.getUniqueSkiers().add(skierID);
-//                            logger.info("Added skierID=" + skierID + " to ResortDaySummary: " + resortDayId);
+                            // Track new unique skier for this resort-season-day
+                            String resortDayId = resortID + "#" + seasonID + "#" + dayID;
+                            resortDayNewSkiers
+                                    .computeIfAbsent(resortDayId, k -> new HashSet<>())
+                                    .add(skierID);
 
                         } catch (Exception e) {
                             logger.log(Level.WARNING, "Error processing summary for skier " + skierID + " on day " + dayID, e);
@@ -352,18 +222,15 @@ public class SkierLiftRideConsumer {
                 }
             }
 
-            // Write skier summaries
+            // Save skier summaries to DB
             if (!skierSummaries.isEmpty()) {
                 try {
                     dbManager.batchUpdateSkierDaySummaries(skierSummaries);
-//                    logger.info("Updated " + skierSummaries.size() + " skier day summaries");
                 } catch (Exception e) {
                     logger.log(Level.SEVERE, "Failed to update skier day summaries", e);
                     for (SkierDaySummary summary : skierSummaries) {
                         try {
-                            List<SkierDaySummary> singleItem = new ArrayList<>();
-                            singleItem.add(summary);
-                            dbManager.batchUpdateSkierDaySummaries(singleItem);
+                            dbManager.batchUpdateSkierDaySummaries(List.of(summary));
                         } catch (Exception ex) {
                             logger.log(Level.SEVERE, "Failed to update skier summary: " + summary.getId(), ex);
                         }
@@ -371,38 +238,31 @@ public class SkierLiftRideConsumer {
                 }
             }
 
-            // Save resort summaries to DynamoDB
-            if (!batchResortSummaries.isEmpty()) {
-//                logger.info("Ready to write " + batchResortSummaries.size() + " resort day summaries..."); // ADD THIS LINE
-                try {
-                    List<ResortDaySummary> resortList = new ArrayList<>(batchResortSummaries.values());
-                    dbManager.batchUpdateResortDaySummaries(resortList);
-//                    logger.info("Updated " + resortList.size() + " resort day summaries");
+            // Flush aggregated unique skier counts to DB
+            for (Map.Entry<String, Set<Integer>> entry : resortDayNewSkiers.entrySet()) {
+                String resortDayId = entry.getKey();
+                Set<Integer> skierSet = entry.getValue();
 
-                    // Only update in-memory cache after successful write
-                    for (ResortDaySummary summary : resortList) {
-//                        logger.info("About to save ResortDaySummary: id=" + summary.getId() +
-//                                ", resortID=" + summary.getResortID() +
-//                                ", seasonID=" + summary.getSeasonID() +
-//                                ", dayID=" + summary.getDayID() +
-//                                ", uniqueSkiers=" + summary.getUniqueSkiers().size());
+                if (!skierSet.isEmpty()) {
+                    String[] parts = resortDayId.split("#");
+                    int resortID = Integer.parseInt(parts[0]);
+                    int seasonID = Integer.parseInt(parts[1]);
+                    int dayID = Integer.parseInt(parts[2]);
+                    int increment = skierSet.size();
 
-                        resortDaySummaries.put(summary.getId(), summary);
-                    }
-                } catch (Exception e) {
-                    logger.log(Level.SEVERE, "Failed to update resort day summaries", e);
-                    // Retry saving each individual record if batch fails
-                    for (ResortDaySummary summary : batchResortSummaries.values()) {
-                        try {
-                            List<ResortDaySummary> singleItem = new ArrayList<>();
-                            singleItem.add(summary);
-                            dbManager.batchUpdateResortDaySummaries(singleItem);
-                        } catch (Exception ex) {
-                            logger.log(Level.SEVERE, "Failed to update resort summary: " + summary.getId(), ex);
-                        }
+                    logger.info("Processing resortDayId: " + resortDayId + " with " + increment + " new skiers");
+                    try {
+                        logger.info("Calling incrementUniqueSkierCount with: id=" + resortDayId +
+                                ", resortID=" + resortID + ", seasonID=" + seasonID +
+                                ", dayID=" + dayID + ", increment=" + increment);
+                        dbManager.incrementUniqueSkierCount(resortDayId, increment, resortID, seasonID, dayID);
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Failed to increment unique skier count for " + resortDayId, e);
                     }
                 }
             }
+            logger.info("Clearing skierResortDayRecords after successful flush.");
+            skierResortDayRecords.clear();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing summary data", e);
         }
@@ -471,7 +331,7 @@ public class SkierLiftRideConsumer {
             messageCounter.incrementAndGet();
             // Trigger early flush if buffer is too large
             if (skierResortDayRecords.size() > 1000) {
-                logger.info("Triggering early flush of summaries due to memory size...");
+//                logger.info("Triggering early flush of summaries due to memory size...");
                 batchWriteExecutor.submit(() -> {
                     try {
                         processSummaryData();

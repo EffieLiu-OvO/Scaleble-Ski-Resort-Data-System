@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class MultithreadedClient {
     private static final int INITIAL_THREAD_COUNT = 32;
     private static final int REQUESTS_PER_THREAD = 1000;
-    private static final int TOTAL_REQUESTS = 200000;
+    private static final int TOTAL_REQUESTS = 150000;
     private static final int PHASE2_THREAD_COUNT = 248;
     private static final int QUEUE_CAPACITY = 50000;
     private static final int BATCH_SIZE = 1000;
