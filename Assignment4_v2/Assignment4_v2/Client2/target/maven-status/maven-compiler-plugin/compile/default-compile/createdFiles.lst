@@ -1,0 +1,6 @@
+com\cs6650\client2\RequestRecord.class
+com\cs6650\client2\LiftRideEventProducer.class
+com\cs6650\client2\MultithreadedClient.class
+com\cs6650\client2\ThroughputPlotter.class
+com\cs6650\client2\LiftRideGenerator.class
+com\cs6650\client2\SkiersClient.class
