@@ -19,11 +19,9 @@ public class ResortDaySummary {
     private int dayID;
     private Set<Integer> uniqueSkiers; // Set of skier IDs that visited on this day
     private int seasonID; // for season id
-
     public ResortDaySummary() {
         this.uniqueSkiers = new HashSet<>();
     }
-
     @DynamoDbPartitionKey
     @DynamoDbAttribute("id")
     public String getId() {

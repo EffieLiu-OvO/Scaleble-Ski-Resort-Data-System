@@ -31,12 +31,12 @@
       <version>2.8.9</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.openapitools</groupId>
-      <artifactId>openapi-java-client</artifactId>
-      <version>2.0</version>
-      <scope>compile</scope>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.openapitools</groupId>-->
+<!--      <artifactId>openapi-java-client</artifactId>-->
+<!--      <version>2.0</version>-->
+<!--      <scope>compile</scope>-->
+<!--    </dependency>-->
 
     <dependency>
       <groupId>org.jfree</groupId>
@@ -51,7 +51,7 @@
     <plugins>
       <!-- Compiler Plugin -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
+        <groupId>org.apaeckche.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>

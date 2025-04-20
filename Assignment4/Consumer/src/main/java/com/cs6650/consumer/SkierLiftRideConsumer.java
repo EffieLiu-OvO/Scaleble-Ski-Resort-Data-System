@@ -54,6 +54,7 @@ public class SkierLiftRideConsumer {
                 testSummary.setSkierID(999);
                 testSummary.setDayID(1);
                 testSummary.setResortID(10);
+                testSummary.setSeasonID(2);
                 testSummary.setTotalRides(1);
                 testSummary.setTotalVertical(10);
                 HashSet<Integer> testLifts = new HashSet<>();
@@ -268,12 +269,12 @@ public class SkierLiftRideConsumer {
 //        }
 //    }
 
-    // wy version
+    // wy version, tw version
     /**
      * Periodically processes in-memory skier records and writes summarized data to DynamoDB.
      *
      * This method generates:
-     * - SkierDaySummary records (per skier, resort, day)
+     * - SkierDaySummary records (per skier, resort, season, day)
      * - ResortDaySummary records (per resort, season, day)
      *
      * Summaries are batched and written to DynamoDB in bulk.
@@ -302,14 +303,15 @@ public class SkierLiftRideConsumer {
                     for (Map.Entry<Integer, SkierRecord> dayEntry : dayRecords.entrySet()) {
                         int dayID = dayEntry.getKey();
                         SkierRecord record = dayEntry.getValue();
+                        int seasonID = record.getSeasonID();
 
                         try {
-                            // 1. Build SkierDaySummary
-                            String skierSummaryId = skierID + "#" + dayID;
+                            // 1. Create SkierDaySummary with proper composite key
                             SkierDaySummary skierSummary = new SkierDaySummary();
-                            skierSummary.setId(skierSummaryId);
+                            skierSummary.setIdFromParts(skierID, resortID, seasonID, dayID);
                             skierSummary.setSkierID(skierID);
                             skierSummary.setDayID(dayID);
+                            skierSummary.setSeasonID(seasonID);
                             skierSummary.setResortID(resortID);
                             skierSummary.setTotalRides(record.getTotalLiftRides());
                             skierSummary.setTotalVertical(record.getTotalVertical());
@@ -321,7 +323,6 @@ public class SkierLiftRideConsumer {
                             skierSummaries.add(skierSummary);
 
                             // 2. Build ResortDaySummary
-                            int seasonID = record.getSeasonID();
 //                            logger.info(seasonID + "currently is");
                             String resortDayId = resortID + "#"+ seasonID + "#" + dayID;
 
@@ -465,7 +466,7 @@ public class SkierLiftRideConsumer {
             }
             messageCounter.incrementAndGet();
         } catch(Exception e){
-            logger.log(Level.WARNING,"Error processing message: " + message, e);
-        }
+        logger.log(Level.WARNING,"Error processing message: " + message, e);
     }
+}
 }
