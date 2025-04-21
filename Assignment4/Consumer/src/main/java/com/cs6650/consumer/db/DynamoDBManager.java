@@ -1,5 +1,7 @@
 package com.cs6650.consumer.db;
 import com.cs6650.consumer.model.*;
+import java.util.HashSet;
+import java.util.Set;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -29,6 +31,8 @@ public class DynamoDBManager {
     private final DynamoDbTable<SkierLiftRide> liftRideTable;
     private final DynamoDbTable<SkierDaySummary> skierDaySummaryTable;
     private final DynamoDbTable<ResortDaySummary> resortDaySummaryTable;
+    private final DynamoDbTable<SkierVerticalSummary> skierVerticalTable;
+
     // Constructor to initialize DynamoDB client and tables.
     public DynamoDBManager(boolean useLocal) {
         if(useLocal){
@@ -42,6 +46,7 @@ public class DynamoDBManager {
         this.liftRideTable = enhancedClient.table("SkierLiftRides",TableSchema.fromBean(SkierLiftRide.class));
         this.skierDaySummaryTable = enhancedClient.table("SkierDaySummaries",TableSchema.fromBean(SkierDaySummary.class));
         this.resortDaySummaryTable = enhancedClient.table("ResortDaySummaries",TableSchema.fromBean(ResortDaySummary.class));
+        this.skierVerticalTable = enhancedClient.table("SkierVerticalSummaries",TableSchema.fromBean(SkierVerticalSummary.class));
         testConnection();
     }
     public void testConnection(){
@@ -87,6 +92,9 @@ public class DynamoDBManager {
             }
             if (!existingTables.contains("ResortDaySummaries")) {
                 createTable("ResortDaySummaries");
+            }
+            if (!existingTables.contains("SkierVerticalSummaries")) {
+                createTable("SkierVerticalSummaries");
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error creating tables", e);
@@ -304,6 +312,163 @@ public class DynamoDBManager {
             return resortDaySummaryTable.getItem(key);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to fetch ResortDaySummary for id: " + resortDayId, e);
+            return null;
+        }
+    }
+
+    public void batchUpdateSkierVerticalSummary(List<SkierVerticalSummary> summaries) {
+        if (summaries.isEmpty()) return;
+
+        try {
+            Map<String, SkierVerticalSummary> mergedBySeason = new HashMap<>();
+            Map<Integer, Integer> totalBySkier = new HashMap<>();
+            Map<Integer, Set<Integer>> skierSeasons = new HashMap<>();
+
+            // Merge per-season entries
+            for (SkierVerticalSummary summary : summaries) {
+                String id = summary.getId();
+                SkierVerticalSummary existing = mergedBySeason.get(id);
+
+                if (existing != null) {
+                    existing.setTotalVertical(existing.getTotalVertical() + summary.getTotalVertical());
+                } else {
+                    mergedBySeason.put(id, summary);
+                }
+            }
+
+            // Save season-specific entries and track season count per skier
+            for (SkierVerticalSummary summary : mergedBySeason.values()) {
+                skierVerticalTable.putItem(summary);
+
+                int skierID = summary.getSkierID();
+                int seasonID = summary.getSeasonID();
+
+                totalBySkier.put(skierID,
+                    totalBySkier.getOrDefault(skierID, 0) + summary.getTotalVertical());
+
+                skierSeasons.computeIfAbsent(skierID, k -> new HashSet<>()).add(seasonID);
+            }
+
+            // Save #ALL entries only if skier has >1 unique season
+            for (Map.Entry<Integer, Integer> entry : totalBySkier.entrySet()) {
+                int skierID = entry.getKey();
+                Set<Integer> seasons = skierSeasons.getOrDefault(skierID, Set.of());
+
+                if (seasons.size() > 1) {
+                    logger.info("Writing #ALL summary for skierID=" + skierID + " totalVertical=" + entry.getValue());
+                    SkierVerticalSummary allSummary = new SkierVerticalSummary();
+                    allSummary.setSkierID(skierID);
+                    allSummary.setSeasonID(-1);
+                    allSummary.setId(skierID + "#ALL");
+                    allSummary.setTotalVertical(entry.getValue());
+                    skierVerticalTable.putItem(allSummary);
+                }
+            }
+
+            logger.info("Updated " + mergedBySeason.size() + " per-season skier vertical summaries");
+            logger.info("Total batch size (after merge): " + summaries.size());
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to batch update skier vertical summaries", e);
+            throw e;
+        }
+    }
+
+
+//    public void batchUpdateSkierVerticalSummary(List<SkierVerticalSummary> summaries) {
+//        if (summaries.isEmpty()) return;
+//
+//        try {
+//            Map<String, SkierVerticalSummary> mergedBySeason = new HashMap<>();
+//            Map<Integer, Integer> totalBySkier = new HashMap<>();
+//
+//            for (SkierVerticalSummary summary : summaries) {
+//                // Merge per-season
+//                String id = summary.getId();
+//                SkierVerticalSummary existing = mergedBySeason.get(id);
+//
+//                if (existing != null) {
+//                    existing.setTotalVertical(existing.getTotalVertical() + summary.getTotalVertical());
+//                } else {
+//                    mergedBySeason.put(id, summary);
+//                }
+//
+//                // Track total per skier
+//                int skierID = summary.getSkierID();
+//                totalBySkier.put(skierID,
+//                    totalBySkier.getOrDefault(skierID, 0) + summary.getTotalVertical());
+//            }
+//
+//            // Save season-specific entries
+//            for (SkierVerticalSummary summary : mergedBySeason.values()) {
+//                skierVerticalTable.putItem(summary);
+//            }
+//
+//            // Save #ALL entries only if skier has >1 season
+//            for (Map.Entry<Integer, Integer> entry : totalBySkier.entrySet()) {
+//                int skierID = entry.getKey();
+//                long seasonCount = summaries.stream()
+//                    .filter(s -> s.getSkierID() == skierID)
+//                    .map(SkierVerticalSummary::getSeasonID)
+//                    .distinct().count();
+//
+//                if (seasonCount > 1) {
+//                    logger.info("Writing ALL summary for skierID=" + skierID + " totalVertical=" + entry.getValue());
+//                    SkierVerticalSummary allSummary = new SkierVerticalSummary();
+//                    allSummary.setSkierID(skierID);
+//                    allSummary.setSeasonID(-1);
+//                    allSummary.setId(skierID + "#ALL");
+//                    allSummary.setTotalVertical(entry.getValue());
+//                    skierVerticalTable.putItem(allSummary);
+//                }
+//            }
+//
+//            logger.info("Incoming summary batch size: " + summaries.size());
+//            summaries.forEach(s -> logger.info("skier=" + s.getSkierID() + ", season=" + s.getSeasonID()));
+//
+//
+//        } catch (Exception e) {
+//            logger.log(Level.SEVERE, "Failed to batch update skier vertical summaries", e);
+//            throw e;
+//        }
+//    }
+
+    public SkierVerticalSummary getSkierVerticalSummary(int skierID, Integer seasonID) {
+        try {
+            if (seasonID != null) {
+                String id = skierID + "#" + seasonID;
+                SkierVerticalSummary key = new SkierVerticalSummary();
+                key.setId(id);
+                key.setSeasonID(seasonID);
+                return skierVerticalTable.getItem(key);
+            } else {
+                // First try #ALL
+                String allId = skierID + "#ALL";
+                SkierVerticalSummary allKey = new SkierVerticalSummary();
+                allKey.setId(allId);
+                allKey.setSeasonID(-1);
+                SkierVerticalSummary allSummary = skierVerticalTable.getItem(allKey);
+                if (allSummary != null) return allSummary;
+
+                // Else scan and sum
+                int total = 0;
+                for (SkierVerticalSummary summary : skierVerticalTable.scan().items()) {
+                    if (summary.getSkierID() == skierID && summary.getSeasonID() != -1) {
+                        total += summary.getTotalVertical();
+                    }
+                }
+
+                if (total == 0) return null;
+
+                SkierVerticalSummary fallback = new SkierVerticalSummary();
+                fallback.setSkierID(skierID);
+                fallback.setSeasonID(-1);
+                fallback.setId(skierID + "#ALL");
+                fallback.setTotalVertical(total);
+                return fallback;
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to fetch skier vertical summary for skierID=" + skierID, e);
             return null;
         }
     }

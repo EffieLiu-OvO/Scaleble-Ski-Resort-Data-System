@@ -10,6 +10,7 @@
         <module name="CS6650-Server" />
         <module name="consumer" />
         <module name="CS6650-Client" />
+        <module name="CS6650-Get_Server" />
       </profile>
     </annotationProcessing>
   </component>
