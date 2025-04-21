@@ -42,6 +42,7 @@ public class SkierLiftRideConsumer {
     private static final AtomicLong lastCount = new AtomicLong(0);
     private static long lastTimestamp = System.currentTimeMillis();
     private static DynamoDBManager dbManager;
+    private static final Map<String, SkierVerticalSummary> skierVerticalSummaries = new ConcurrentHashMap<>();
     // In-memory tracking of unique skier IDs and visit counts per resort-day
     private static final Map<String, Set<Integer>> resortDayNewSkiers = new ConcurrentHashMap<>();
     private static final Map<String, Integer> resortDayTotalVisits = new ConcurrentHashMap<>();
@@ -73,6 +74,31 @@ public class SkierLiftRideConsumer {
                 dbManager.batchUpdateSkierDaySummaries(testList);
 
                 logger.info("Successfully wrote test record to SkierDaySummaries");
+
+
+                // testing multiple seasons
+                List<SkierVerticalSummary> testSummaries = new ArrayList<>();
+
+                // Season 2023
+                SkierVerticalSummary season2023 = new SkierVerticalSummary();
+                season2023.setId("999#2023");
+                season2023.setSkierID(999);
+                season2023.setSeasonID(2023);
+                season2023.setTotalVertical(50);
+
+                // Season 2024
+                SkierVerticalSummary season2024 = new SkierVerticalSummary();
+                season2024.setId("999#2024");
+                season2024.setSkierID(999);
+                season2024.setSeasonID(2024);
+                season2024.setTotalVertical(70);
+
+                testSummaries.add(season2023);
+                testSummaries.add(season2024);
+
+                dbManager.batchUpdateSkierVerticalSummary(testSummaries);
+                logger.info("Successfully wrote test records for multiple seasons");
+
             } catch(Exception e) {
                 logger.log(Level.SEVERE, "Failed to write test record", e);
             }
@@ -187,10 +213,12 @@ public class SkierLiftRideConsumer {
             }
 
             List<SkierDaySummary> skierSummaries = new ArrayList<>();
+            List<SkierVerticalSummary> verticalSummaries = new ArrayList<>();
 
             for (Map.Entry<Integer, Map<Integer, Map<Integer, SkierRecord>>> skierEntry : skierResortDayRecords.entrySet()) {
                 int skierID = skierEntry.getKey();
                 Map<Integer, Map<Integer, SkierRecord>> resortRecords = skierEntry.getValue();
+                Map<Integer, Integer> verticalBySeason = new HashMap<>();
 
                 for (Map.Entry<Integer, Map<Integer, SkierRecord>> resortEntry : resortRecords.entrySet()) {
                     int resortID = resortEntry.getKey();
@@ -225,10 +253,35 @@ public class SkierLiftRideConsumer {
 
                             resortDayTotalVisits.merge(resortDayId, record.getTotalLiftRides(), Integer::sum);
 
+                            verticalBySeason.put(seasonID,
+                                verticalBySeason.getOrDefault(seasonID, 0) + record.getTotalVertical());
+
                         } catch (Exception e) {
                             logger.log(Level.WARNING, "Error processing summary for skier " + skierID + " on day " + dayID, e);
                         }
                     }
+                }
+
+                for (Map.Entry<Integer, Integer> entry : verticalBySeason.entrySet()) {
+                    int seasonID = entry.getKey();
+                    int vertical = entry.getValue();
+
+                    SkierVerticalSummary verticalSummary = new SkierVerticalSummary();
+                    verticalSummary.setSkierID(skierID);
+                    verticalSummary.setSeasonID(seasonID);
+                    verticalSummary.setId(skierID + "#" + seasonID);
+                    verticalSummary.setTotalVertical(vertical);
+
+                    verticalSummaries.add(verticalSummary);
+                }
+                if (verticalBySeason.size() > 1) {
+                    int totalVertical = verticalBySeason.values().stream().mapToInt(Integer::intValue).sum();
+                    SkierVerticalSummary allSummary = new SkierVerticalSummary();
+                    allSummary.setSkierID(skierID);
+                    allSummary.setSeasonID(-1);
+                    allSummary.setId(skierID + "#ALL");
+                    allSummary.setTotalVertical(totalVertical);
+                    verticalSummaries.add(allSummary);
                 }
             }
 
@@ -246,6 +299,10 @@ public class SkierLiftRideConsumer {
                         }
                     }
                 }
+            }
+            if (!verticalSummaries.isEmpty()) {
+                dbManager.batchUpdateSkierVerticalSummary(verticalSummaries);
+                logger.info("Updated " + verticalSummaries.size() + " skier vertical summaries");
             }
 
             // Write resort-level summaries
@@ -314,9 +371,24 @@ public class SkierLiftRideConsumer {
                         record.addLiftRide(liftID, verticalGain);
                         return record;
                     });
+
+
             // Track resort-day unique skier and visit
             resortDayNewSkiers.computeIfAbsent(resortDayId, k -> ConcurrentHashMap.newKeySet()).add(skierID);
             resortDayTotalVisits.merge(resortDayId, 1, Integer::sum);
+
+            // Update in-memory SkierVerticalSummary
+            String verticalKey = skierID + "#" + seasonID;
+            SkierVerticalSummary summary = skierVerticalSummaries.computeIfAbsent(verticalKey, k -> {
+                SkierVerticalSummary s = new SkierVerticalSummary();
+                s.setId(verticalKey);
+                s.setSkierID(skierID);
+                s.setSeasonID(seasonID);
+                s.setTotalVertical(0);
+                return s;
+            });
+            summary.setTotalVertical(summary.getTotalVertical() + verticalGain);
+
 
             // Build lift ride record
             SkierLiftRide liftRide = new SkierLiftRide();
