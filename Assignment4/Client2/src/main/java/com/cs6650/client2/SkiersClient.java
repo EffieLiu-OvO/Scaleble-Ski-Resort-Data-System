@@ -9,8 +9,9 @@ import com.google.gson.JsonObject;
 
 public class SkiersClient {
     private static final HttpClient client = HttpClient.newHttpClient();
-    private static final String SERVER_URL = "http://34.221.211.254:8080/CS6650-Server/skiers";
+//    private static final String SERVER_URL = "http://34.221.211.254:8080/CS6650-Server/skiers";
     //private static final String SERVER_URL = "http://localhost:8080/CS6650_Server_war/skiers";  //wy
+    private static final String SERVER_URL = "http://localhost:8080/CS6650-Server/skiers"; // tw
     private static final int MAX_RETRIES = 5;
     private static final int RETRY_DELAY_MS = 100;
     private final List<RequestRecord> records;

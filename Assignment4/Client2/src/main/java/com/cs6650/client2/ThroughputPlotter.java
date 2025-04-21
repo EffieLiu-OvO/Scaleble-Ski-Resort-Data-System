@@ -18,6 +18,7 @@ public class ThroughputPlotter {
     public static void main(String[] args) {
         String csvFile = "C:/Users/liume_lhvc42h/Desktop/CS6650-Assignments/Assignment1/Client2/request_records.csv";
 //        String csvFile = "/Users/yuwang/Desktop/final6650/CS6650-Assignments/Assignment4/Client2/src/main/java/com/cs6650/client2";
+//        String csvFile = "/Users/wangtianjie/Desktop/6650/CS6650-Assignments/Assignment4/Client2/request_records.csv";
         String outputFile = "throughput_plot.png";
 
         try {
