@@ -200,30 +200,56 @@ public class DynamoDBManager {
             throw e;
         }
     }
+    
+    // tw
     /**
-     * Batch updates SkierDaySummary records with merge logic to aggregate rides and lifts.
+     * Batch updates skier day summaries, merging records with matching IDs.
+     * For duplicate IDs: sums totals, merges lifts, and auto-generates missing IDs.
+     * @param summaries list of SkierDaySummary records to update/merge
      */
-    public void batchUpdateSkierDaySummaries(List<SkierDaySummary> summaries){
-        if(summaries.isEmpty()) return;
-        try{
-            Map<String,SkierDaySummary> mergedSummaries = new HashMap<>();
-            for(SkierDaySummary summary : summaries){
+    public void batchUpdateSkierDaySummaries(List<SkierDaySummary> summaries) {
+        if (summaries.isEmpty()) {
+            logger.info("No summaries to update");
+            return;
+        }
+    
+        try {
+            Map<String, SkierDaySummary> mergedSummaries = new HashMap<>();
+        
+            for (SkierDaySummary summary : summaries) {
+                // Ensure ID is properly set
+                if (summary.getId() == null || summary.getId().isEmpty()) {
+                    summary.setIdFromParts(summary.getSkierID(), summary.getResortID(),
+                            summary.getSeasonID(), summary.getDayID());
+                }
+                
                 String id = summary.getId();
                 SkierDaySummary existing = mergedSummaries.get(id);
-                if(existing!=null){
-                    existing.setTotalRides(existing.getTotalRides()+summary.getTotalRides());
-                    existing.setTotalVertical(existing.getTotalVertical()+summary.getTotalVertical());
-                    existing.getLiftsRidden().addAll(summary.getLiftsRidden());
+            
+                if (existing != null) {
+                    // Merge with existing summary
+                    existing.setTotalRides(existing.getTotalRides() + summary.getTotalRides());
+                    existing.setTotalVertical(existing.getTotalVertical() + summary.getTotalVertical());
+                
+                    // Ensure liftsRidden is not null before merging
+                    if (summary.getLiftsRidden() != null) {
+                        existing.getLiftsRidden().addAll(summary.getLiftsRidden());
+                    }
                 } else {
-                    mergedSummaries.put(id,summary);
+                    // Add new summary to map (defensive copy optional)
+                    mergedSummaries.put(id, summary);
                 }
             }
-            for(SkierDaySummary summary : mergedSummaries.values()){
+        
+            // Batch write to DynamoDB
+            for (SkierDaySummary summary : mergedSummaries.values()) {
                 skierDaySummaryTable.putItem(summary);
             }
-            logger.info("Successfully updated " + mergedSummaries.size() + " skier day summaries (after merging)");
-        } catch(Exception e){
-            logger.log(Level.SEVERE,"Failed to batch update skier day summaries",e);
+        
+            logger.info("Successfully updated " + mergedSummaries.size() +
+                    " skier day summaries (after merging)");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to batch update skier day summaries", e);
             throw e;
         }
     }
@@ -312,6 +338,30 @@ public class DynamoDBManager {
             return resortDaySummaryTable.getItem(key);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to fetch ResortDaySummary for id: " + resortDayId, e);
+            return null;
+        }
+    }
+    
+    // tw version
+    /**
+     * Retrieves a SkierDaySummary record by skier, day, season, and resort IDs.
+     * @param skierID skier ID
+     * @param dayID day ID
+     * @param seasonID season ID
+     * @param resortID resort ID
+     * @return SkierDaySummary record, or null if not found
+     */
+    public SkierDaySummary getSkierDaySummary(int skierID, int dayID, int seasonID, int resortID) {
+        String compositeId = skierID + "#" + resortID + "#" + seasonID + "#" + dayID;
+        
+        try {
+            SkierDaySummary key = new SkierDaySummary();
+            key.setId(compositeId);
+            
+            // Get item from DynamoDB using the composite key
+            return skierDaySummaryTable.getItem(key);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to fetch SkierDaySummary for id: " + compositeId, e);
             return null;
         }
     }
@@ -561,5 +611,4 @@ public class DynamoDBManager {
             throw e;
         }
     }
-
 }

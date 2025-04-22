@@ -1,7 +1,9 @@
-com\cs6650\consumer\model\SkierDaySummary.class
-com\cs6650\consumer\SkierRecord.class
-com\cs6650\consumer\model\ResortDaySummary.class
-com\cs6650\consumer\test\DynamoDBConnectionTest.class
-com\cs6650\consumer\db\DynamoDBManager.class
-com\cs6650\consumer\model\SkierLiftRide.class
-com\cs6650\consumer\SkierLiftRideConsumer.class
+com/cs6650/consumer/SkierLiftRideConsumer.class
+com/cs6650/consumer/model/SkierLiftRide.class
+com/cs6650/consumer/SkierRecord.class
+com/cs6650/consumer/model/SkierDaySummary.class
+com/cs6650/consumer/test/DynamoDBConnectionTest.class
+com/cs6650/consumer/model/SkierRecord.class
+com/cs6650/consumer/db/DynamoDBManager.class
+com/cs6650/consumer/model/SkierVerticalSummary.class
+com/cs6650/consumer/model/ResortDaySummary.class

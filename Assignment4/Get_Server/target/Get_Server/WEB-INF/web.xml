@@ -4,6 +4,8 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
          http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd">
+
+  <!-- SkierVerticalServlet - handles /skiers/{skierID}/vertical -->
   <servlet>
     <servlet-name>SkierVerticalServlet</servlet-name>
     <servlet-class>com.cs6650.get_server.SkierVerticalServlet</servlet-class>

@@ -95,5 +95,5 @@ public class SkierVerticalServlet extends HttpServlet {
             response.getWriter().write("Internal server error");
         }
     }
-
+    
 }

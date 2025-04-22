@@ -6,7 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="Get_SkierResortServer" />
         <module name="CS6650-Server" />
+        <module name="CS6650-Server (7)" />
+        <module name="CS6650-Client (3)" />
         <module name="CS6650-Client (2)" />
         <module name="CS6650-Client (1)" />
         <module name="Get_Server" />
@@ -16,10 +19,12 @@
         <module name="CS6650-Server (4)" />
         <module name="CS6650-Server (5)" />
         <module name="CS6650-Server (6)" />
+        <module name="consumer (3)" />
         <module name="consumer (2)" />
         <module name="consumer" />
         <module name="consumer (1)" />
         <module name="CS6650-Client" />
+        <module name="CS6650-Get_Server" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="11" />

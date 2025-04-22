@@ -21,12 +21,13 @@ public class ResortDaySummary {
     // Number of unique skiers who visited on this day
     private int uniqueSkierCount; // Set of skier IDs that visited on this day
     private int seasonID; // for season id
+
     // Total number of lift rides taken by all skiers on this day
     private int totalSkierVisits;
 
+
     public ResortDaySummary() {
     }
-
     @DynamoDbPartitionKey
     @DynamoDbAttribute("id")
     public String getId() {
