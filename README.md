@@ -24,8 +24,10 @@ Implementation of database persistence layer to store ski lift usage data.
 * `models/`: Data models for database representation
 * `documentation/`: Performance test results and database design documentation
 
-### Future Assignments
-Additional assignments will be added to their respective directories as the course progresses.
+### /Assignment4
+Implementation of three GET endpoints for querying skier vertical totals, skier day summaries, and resort day summaries.
+Includes performance testing using Apache JMeter with 128 threads and 500 iterations.
+This assignment was completed in collaboration with team members, with each member
 
 ## Running the Projects
 Each assignment directory contains its own README with specific instructions on how to set up and run the components.
