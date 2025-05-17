@@ -27,7 +27,7 @@ Implementation of database persistence layer to store ski lift usage data.
 ### /Assignment4
 Implementation of three GET endpoints for querying skier vertical totals, skier day summaries, and resort day summaries.
 Includes performance testing using Apache JMeter with 128 threads and 500 iterations.
-This assignment was completed in collaboration with team members, with each member
+This assignment was completed in collaboration with three excellent team members from CS 6650 course.
 
 ## Running the Projects
 Each assignment directory contains its own README with specific instructions on how to set up and run the components.
